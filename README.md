@@ -6,6 +6,7 @@ Buckle your fuckles and get ready for the README of a lifetime. This was made wi
 - Tar inn 8-databits og konverterer til ett tall mellom 0 og 127
 - Tallet skal tilsvare ASCII karakter
 - Viser dette tallet tre 7-segmentdisplays
+- Skal blinke en LED på RS-232 ved mottatt melding
 ![ASCII-Table-wide svg](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/f68f5f9c-886a-44af-b687-88f2303978a9)
 
 
