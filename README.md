@@ -11,3 +11,11 @@ Buckle your fuckles and get ready for the README of a lifetime. This was made wi
 
 
 ## Krav til RX-modul 1
+- UART protokoll 8 data-bit, 1 stop-bit og 0 paritets-bit
+- Skal kunne bruke 9600 baudrate (justerbar)
+- Skal kun vidareføre korrekt mottatt byte
+- Oversampling med 8 gonger raskare hastigheit, bruk bit 3 eller 4
+  - Her bør det være enkelt nok å gjennomføre majoritetsvalg i staden vha. ein funksjon
+- Sender ut eit signal ved mottatt data
+- Vil gjerne: PARITETSBIT
+ 
