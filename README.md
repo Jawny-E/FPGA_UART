@@ -9,6 +9,8 @@ Buckle your fuckles and get ready for the README of a lifetime. This was made wi
 - Skal blinke en LED på RS-232 ved mottatt melding
 ![ASCII-Table-wide svg](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/f68f5f9c-886a-44af-b687-88f2303978a9)
 
+Resultat: 
+![Skjermbilde 2023-10-23 174015](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/71760a93-11c5-45e7-8342-b9c92ca81c6e)
 
 ## Krav til RX-modul 1
 - UART protokoll 8 data-bit, 1 stop-bit og 0 paritets-bit
