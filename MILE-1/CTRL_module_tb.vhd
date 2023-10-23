@@ -92,7 +92,7 @@ begin
       data <= "01110110"; -- hex0: 6 & hex1: 7
       wait for 5 ns;
       assert hex0 = SEG7_6 report "Wrong setting for 7-segment (0)" severity error;
-      assert hex1 = SEG7_7 report "Wrong setting for 7-segment (1)" severity error; --FEIL
+      assert hex1 = SEG7_7 report "Wrong setting for 7-segment (1)" severity error;
       wait for 5 ns;
 
       data <= "10011000"; -- hex0: 8 & hex1: 9
