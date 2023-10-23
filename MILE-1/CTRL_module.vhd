@@ -2,14 +2,16 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity 7seg is
+entity segmentdisp is
+	port(
 	data : in std_logic_vector(7 downto 0);
 	hex1, hex0 : out std_logic_vector(7 downto 0)
+);
 end entity;
 
-architecture project of exercise4 is
+architecture project of segmentdisp is
 
-	pure function displayValue(n: natural) return std_logic_vector is --funksjon av skejrmen
+	pure function displayValue(n: std_logic_vector) return std_logic_vector is --funksjon av skejrmen
 		
 		variable Ekran: std_logic_vector(7 downto 0);
 		
@@ -39,14 +41,14 @@ architecture project of exercise4 is
 	
 end function;
 
-
+begin
 process(all)
+	begin
 	hex1 <=  displayValue(data(7 downto 4));
 	hex0 <=  displayValue(data(3 downto 0));
 
 end process;
 
 end architecture;
-
 
 
