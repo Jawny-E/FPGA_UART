@@ -21,3 +21,5 @@ Resultat:
 - Sender ut eit signal ved mottatt data
 - Vil gjerne: PARITETSBIT
  
+Resultat:
+![dfagsdfg](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/077d0b69-6c57-46e6-940f-523274e7b507)
