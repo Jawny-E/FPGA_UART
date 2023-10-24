@@ -16,7 +16,8 @@ entity rx_module is
 		clk 			 : in std_logic;							  		  -- Intern klokke	
 		rx_input  	 : in std_logic;							  		  -- Seriellt signal
 		recived_flag : out std_logic;							  		  -- Flagg for mottat byte
-		recived_byte : out std_logic_vector(DATABITS-1 downto 0) -- Motatt byte
+		recived_byte : out std_logic_vector(DATABITS-1 downto 0); -- Motatt byte
+		test_clk : out std_logic	
 	);
 end entity;
 
@@ -27,7 +28,7 @@ architecture rtl of rx_module is
 	type RX_SM is (IDLE, START_BIT, DATA_BIT, STOP_BIT, PAUSE);
 	signal current_state : RX_SM := IDLE;
 	--Klokkegenerering
-	constant clk_in_bit : integer := (F_CLK/BAUDRATE/SAMPLING-1);
+	constant clk_in_bit : integer := (F_CLK/(BAUDRATE*SAMPLING*2));
 	signal rx_clk_counter : integer range 0 to CLK_IN_BIT := 0;
 	signal rx_clk : std_logic := '0';
 	signal period_counter : integer range 0 to SAMPLING-1;
@@ -48,6 +49,7 @@ architecture rtl of rx_module is
 			else
 				rx_clk_counter <= rx_clk_counter + 1;
 			end if;
+			test_clk <= rx_clk;
 		end if;
 	end process;
 	
