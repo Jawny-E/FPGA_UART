@@ -22,6 +22,6 @@ Resultat:
 - Vil gjerne: PARITETSBIT
  
 Resultat:
-![dfagsdfg](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/077d0b69-6c57-46e6-940f-523274e7b507)
-<img width="690" alt="Skjermbilde 2023-10-25 123113" src="https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/eb794e6e-b7b7-40e2-9326-017738c72a01">
+
+<img width="693" alt="Results" src="https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/0ffd3171-0160-40c2-b6b4-ec48f064d0b5">
 
