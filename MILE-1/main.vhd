@@ -4,20 +4,24 @@ use ieee.numeric_std.all;
 
 entity rx_module is
 	generic(
-	F_CLK 		 : integer := 50_000_000; 	--50mHz (Hz)
-	BAUDRATE 	 : integer := 9600; 	 		--Gitt baudrate(bit/s)
-	SAMPLING 	 : integer := 8;				--Sampling per periode(per bit)
-	DATABITS 		 : integer := 8				--Bit i ein pakke
-	--PARITET 		 : std_logic := '0';			--'0' for paritetssjekk av
-	--PARITET_OP	 : std_logic := '0'			--'0' for partal, '1' for oddetal 
+		F_CLK 		 	 : integer := 50_000_000; 		--50mHz (Hz)
+		BAUDRATE 	 	 : integer := 9600; 	 			--Gitt baudrate(bit/s)
+		SAMPLING 	 	 : integer := 8;					--Oversampling
+		DATABITS 		 : integer := 8					--Databit i ein pakke
+
+	--Ikkje implementert endå 
+		--PARITET 		 : std_logic := '0';			--'0' for paritetssjekk av
+		--PARITET_OP	 : std_logic := '0'			--'0' for partal, '1' for oddetal 
 	);
-	
 	port(
-		clk 			 : in std_logic;							  		  -- Intern klokke	
-		rx_input  	 : in std_logic;							  		  -- Seriellt signal
-		recived_flag : out std_logic;							  		  -- Flagg for mottat byte
-		recived_byte : buffer std_logic_vector(DATABITS-1 downto 0); -- Motatt byte
-		hex1, hex0 : out std_logic_vector(7 downto 0) -- Output: Signal til eit 7-segment display
+		clk 			 : in std_logic;							  		 		 -- Intern klokke	
+		rx_input  	 : in std_logic;							  		  		 -- Seriellt signal
+		recived_flag : out std_logic;							  		  		 -- Flagg for mottatt byte
+		recived_byte : buffer std_logic_vector(DATABITS-1 downto 0); -- Mottatt byte
+		hex1, hex0 : out std_logic_vector(7 downto 0) 					 -- Output: Signal til 7-segment displaya
+		
+	--Desse portene blei brukt til testing i testbench
+		--Stadar der 
 		--test_clk : out std_logic;	
 		--test_sampling : out std_logic;
 		--test_rx_tests : out std_logic_vector(4 downto 0)
@@ -27,74 +31,96 @@ end entity;
 
 
 architecture rtl of rx_module is 
-	--State machine kontroller
-	type RX_SM is (IDLE, START_BIT, DATA_BIT, STOP_BIT, PAUSE);
-	signal current_state : RX_SM := IDLE;
-	signal move_to_next : std_logic := '0';
-	--Klokkegenerering
-	constant clk_in_bit : integer := (F_CLK/(BAUDRATE*SAMPLING*2));
-	signal rx_clk_counter : integer range 0 to CLK_IN_BIT := 0;
-	signal rx_clk : std_logic := '0';
-	signal period_counter : integer range 0 to SAMPLING-1;
-	--Dataavlesning
-	signal DATA_INDEX : integer range 0 to DATABITS-1 := 0;
-	signal rx_byte		: std_logic_vector(DATABITS-1 downto 0) := (others => '0');
-	signal rx_tests 	: std_logic_vector(4 downto 0) := (others => '0');
-	
-	--Funksjonen returnerar majoriteten av ein 5-bit vektor
+
+---------------------------------------------------
+-- Deklarering av signal og konstantar
+---------------------------------------------------
+
+--State machine kontroller
+	type RX_SM is (IDLE, START_BIT, DATA_BIT, STOP_BIT, PAUSE);	--Ulike states for dataavlesning
+	signal current_state : RX_SM := IDLE;								--Variabel som held noværande state
+	signal move_to_next  : std_logic := '0';							--Brukt til å dobbeltsjekke startbit
+--Klokkegenerering
+	constant clk_in_bit   : integer := (F_CLK/(BAUDRATE*SAMPLING*2)); --Talet på klokkepulsar frå 50Hz til rx_clk(8*baudrate)
+	signal rx_clk_counter : integer range 0 to CLK_IN_BIT := 0;		   --Teljar brukt til å generere rx_clk
+	signal rx_clk         : std_logic := '0';									--Signalet rx_clk
+--Dataavlesning
+	signal period_counter : integer range 0 to SAMPLING-1;								--Kontrollerar kvar vi samplar signalet
+	signal DATA_INDEX : integer range 0 to DATABITS-1 := 0;								--Kontrollerar kva databit som blir lest
+	signal rx_byte		: std_logic_vector(DATABITS-1 downto 0) := (others => '0'); --Mellombels lagring for innkommande data
+	signal rx_tests 	: std_logic_vector(4 downto 0) := (others => '0');				--Mellombels lagring av signalsampler
+
+---------------------------------------------------
+-- Funksjonar
+---------------------------------------------------	
+
+	------
+	-- Funksjonen looper gjennom innkommande vektor
+	-- og teljar opp talet på 0arar og 1arar
+	-- deretter samanliknast dei, og majoritet blir
+	-- returnert ('0' eller '1')
+	------
 	pure function majority_decision(input_vector : std_logic_vector(4 downto 0)) return std_logic is
 		variable count_0 : integer range 0 to 5 := 0;
 		variable count_1 : integer range 0 to 5 := 0;
 		begin
-			for i in input_vector'range loop
-				if input_vector(i) = '0' then
-					count_0 := count_0 + 1;
-				else
-					count_1 := count_1 + 1;
-				end if;
-			end loop;
-			
-			if count_0 > count_1 then
-				return '0';
+		for i in input_vector'range loop
+			if input_vector(i) = '0' then
+				count_0 := count_0 + 1;
 			else
-				return '1';
+				count_1 := count_1 + 1;
+			end if;
+		end loop;
+		
+		if count_0 > count_1 then
+			return '0';
+		else
+			return '1';
 		end if;
 	end function;
 	
-	--Funksjonen returnerar verdiar til displayet
-	pure function displayValue(n: std_logic_vector) return std_logic_vector is 
-		variable Ekran: std_logic_vector(7 downto 0);	
-		
+	-----
+	-- Funksjonen tek inn ein 4-bit lang vektor
+	-- som tilsvarar eit tal mellom 0 og F (hexadesimal)
+	-- og returnerar ein 8-bit lang vektor tilsvarande
+	-- opplyste felt på 7-segment display
+	-----
+	pure function displayValue(n: std_logic_vector) return std_logic_vector is variable Ekran: std_logic_vector(7 downto 0);	
 		begin
-			case n is
-				when "0000" => 		Ekran := "11000000"; --print 0
-				when "0001" => 		Ekran := "11111001"; --print 1
-				when "0010" => 		Ekran := "10100100"; --print 2
-				when "0011" => 		Ekran := "10110000"; --print 3
-				when "0100" => 		Ekran := "10011001"; --print 4
-				when "0101" => 		Ekran := "10010010"; --print 5
-				when "0110" => 		Ekran := "10000010"; --print 6
-				when "0111" => 		Ekran := "11111000"; --print 7
-				when "1000" => 		Ekran := "10000000"; --print 8
-				when "1001" => 		Ekran := "10010000"; --print 9
-				when "1010" => 		Ekran := "10001000"; --print A
-				when "1011" => 		Ekran := "10000011"; --print B
-				when "1100" => 		Ekran := "11000110"; --print C
-				when "1101" => 		Ekran := "10100001"; --print d
-				when "1110" => 		Ekran := "10000110"; --print E
-				when "1111" => 		Ekran := "10001110"; --print F
-				when others => Ekran := "11000000";
-			end case;
-			
-			return Ekran;
+		case n is
+			when "0000" => 		Ekran := "11000000"; --print 0
+			when "0001" => 		Ekran := "11111001"; --print 1
+			when "0010" => 		Ekran := "10100100"; --print 2
+			when "0011" => 		Ekran := "10110000"; --print 3
+			when "0100" => 		Ekran := "10011001"; --print 4
+			when "0101" => 		Ekran := "10010010"; --print 5
+			when "0110" => 		Ekran := "10000010"; --print 6
+			when "0111" => 		Ekran := "11111000"; --print 7
+			when "1000" => 		Ekran := "10000000"; --print 8
+			when "1001" => 		Ekran := "10010000"; --print 9
+			when "1010" => 		Ekran := "10001000"; --print A
+			when "1011" => 		Ekran := "10000011"; --print B
+			when "1100" => 		Ekran := "11000110"; --print C
+			when "1101" => 		Ekran := "10100001"; --print d
+			when "1110" => 		Ekran := "10000110"; --print E
+			when "1111" => 		Ekran := "10001110"; --print F
+			when others => Ekran := "11000000";
+		end case;
+		return Ekran;
 	end function;
 
-
+---------------------------------------------------
+-- Prosessar
+---------------------------------------------------		
 	begin
 	
-	-- Prosessen genererer klokkesignal som har frekvens tilsvarande samplingsrate
+	-----
+	-- Prosessen genererer rx_clk som skal ha 
+	-- ein frekvens som tilsvarar 8 pulsar per
+	-- bit. Dette gjerast vha. teljar
+	-----
 	clk_generator : process(clk)
-	begin
+		begin
 		if rising_edge(clk) then
 			if(rx_clk_counter = clk_in_bit) then
 				rx_clk <= not rx_clk;
@@ -106,17 +132,20 @@ architecture rtl of rx_module is
 		end if;
 	end process;
 	
-	--Prosessen skal lese av innkommande data
+	-----
+	-- Prosessen handterar avlesning av seriell
+	-- data, dette gjerast vha. ein statemachine
+	-- Den er avhengig av signalet rx_clk som bestemmer
+	-- timing for systemet
+	-----
 	data_read : process(rx_clk)
-	begin
+		begin
 		if rising_edge(rx_clk)then
 			case current_state is
 				when IDLE =>
-					-- Setter telleverdier lik 0
 					DATA_INDEX <= 0;
 					period_counter <= 0;
 					rx_byte <= (others => '0');
-					-- Sjekk om startbit er mottatt
 					if rx_input = '0' then
 						current_state <= START_BIT;
 					else
@@ -124,11 +153,10 @@ architecture rtl of rx_module is
 					end if;
 					
 				when START_BIT =>
-					-- Dobbeltsjekk startbit 
 					if period_counter = SAMPLING-1 then
 						if move_to_next = '1' then
 							current_state <= DATA_BIT;
-							period_counter <= 2; --Setter til 2 for å gjøre opp for timing-delays i denne casen
+							period_counter <= 2; 		--Setter til 2 for å gjøre opp for timing-delays i denne casen
 						else
 							current_state <= IDLE;
 						end if;
@@ -146,9 +174,6 @@ architecture rtl of rx_module is
 					end if;
 					
 				when DATA_BIT =>
-					-- Les av bit med korrekt timing og index
-					-- Inkrementer DATA_INDEX
-					-- Legg til bit i signalet rx_byte
 					--test_rx_tests <= rx_tests;
 					if period_counter < SAMPLING-1 then
 						if (period_counter < 7) and (period_counter > 1) then
@@ -174,7 +199,6 @@ architecture rtl of rx_module is
 					
 				
 				when STOP_BIT =>
-					-- Sjekk at stoppbit er mottatt
 					recived_byte <= rx_byte;
 					
 					if period_counter < SAMPLING-1 then
@@ -198,7 +222,10 @@ architecture rtl of rx_module is
 		end if;
 	end process;
 
-	--Prosessen kontrollerer displayet
+	-----
+	-- Process all kan brukast til meir, men no brukast
+	-- den kun til å sette 7-segmentdisplay
+	-----
 	display : process(all)
 	begin
 		hex1 <=  displayValue(recived_byte(7 downto 4));
