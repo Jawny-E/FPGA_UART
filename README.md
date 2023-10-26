@@ -25,3 +25,5 @@ Resultat:
 
 <img width="693" alt="Results" src="https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/0ffd3171-0160-40c2-b6b4-ec48f064d0b5">
 
+Pinout:
+<img width="631" alt="Pins" src="https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/9ddb34d5-ad3c-42e1-a3a9-48a55c5920f0">
