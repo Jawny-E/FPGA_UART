@@ -8,18 +8,16 @@ entity rx_module is
 		BAUDRATE 	 	 : integer := 9600; 	 			--Gitt baudrate(bit/s)
 		SAMPLING 	 	 : integer := 8;					--Oversampling
 		DATABITS 		 : integer := 8					--Databit i ein pakke
-
-	--Ikkje implementert endå 
-		--PARITET 		 : std_logic := '0';			--'0' for paritetssjekk av
-		--PARITET_OP	 : std_logic := '0'			--'0' for partal, '1' for oddetal 
 	);
 	port(
 		clk 			 : in std_logic;							  		 		 -- Intern klokke	
 		rx_input  	 : in std_logic;							  		  		 -- Seriellt signal
 		recived_flag : out std_logic;							  		  		 -- Flagg for mottatt byte
 		recived_byte : buffer std_logic_vector(DATABITS-1 downto 0); -- Mottatt byte
-		hex1, hex0 : out std_logic_vector(7 downto 0) 					 -- Output: Signal til 7-segment displaya
-		
+		hex1, hex0 : out std_logic_vector(7 downto 0); 					 -- Output: Signal til 7-segment displaya
+		PARITET 		 : in std_logic;			--'0' for paritetssjekk av
+		PARITET_OP	 : in std_logic			--'0' for partal, '1' for oddetal 
+	
 	--Desse portene blei brukt til testing i testbench
 		--Stadar der 
 		--test_clk : out std_logic;	
@@ -37,7 +35,7 @@ architecture rtl of rx_module is
 ---------------------------------------------------
 
 --State machine kontroller
-	type RX_SM is (IDLE, START_BIT, DATA_BIT, STOP_BIT, PAUSE);	--Ulike states for dataavlesning
+	type RX_SM is (IDLE, START_BIT, DATA_BIT, PARITY_BIT, STOP_BIT, PAUSE);	--Ulike states for dataavlesning
 	signal current_state : RX_SM := IDLE;								--Variabel som held noværande state
 	signal move_to_next  : std_logic := '0';							--Brukt til å dobbeltsjekke startbit
 --Klokkegenerering
@@ -53,14 +51,39 @@ architecture rtl of rx_module is
 ---------------------------------------------------
 -- Funksjonar
 ---------------------------------------------------	
-
+	
+	-----
+	--Funksjonen sjekker om ein vektor med lengde
+	--databits + 1 har odde eller jamnt tal 1arar
+	--dette er brukt i paritetssjekk
+	-----
+	pure function even_or_odd(input_vector : std_logic_vector(DATABITS downto 0)) return std_logic is
+	variable count_1s : integer range 0 to 9 := 0;
+	begin
+	for i in input_vector'range loop
+			if input_vector(i) = '0' then
+				count_1s := count_1s;
+			else
+				count_1s := count_1s + 1;
+			end if;
+	end loop;
+		
+	if (count_1s mod 2) = 0 then
+	-- it's even
+		return '0';
+	else
+	-- it's odd
+		return '1';
+	end if;
+	end function;
+	
 	------
 	-- Funksjonen looper gjennom innkommande vektor
 	-- og teljar opp talet på 0arar og 1arar
 	-- deretter samanliknast dei, og majoritet blir
 	-- returnert ('0' eller '1')
 	------
-	pure function majority_decision(input_vector : std_logic_vector(4 downto 0)) return std_logic is
+	function majority_decision(input_vector : std_logic_vector(4 downto 0)) return std_logic is
 		variable count_0 : integer range 0 to 5 := 0;
 		variable count_1 : integer range 0 to 5 := 0;
 		begin
@@ -193,21 +216,42 @@ architecture rtl of rx_module is
 							current_state <= DATA_BIT;
 						else 
 							DATA_INDEX <= 0;
-							current_state <= STOP_BIT;
+							if PARITET = '1' then
+									current_state <= PARITY_BIT;
+							else
+								current_state <= STOP_BIT;
+							end if;
 						end if;
 					end if;
 					
-				
-				when STOP_BIT =>
-					recived_byte <= rx_byte;
-					
+				when PARITY_BIT =>
 					if period_counter < SAMPLING-1 then
+						period_counter <= period_counter + 1;
+					else
+						period_counter <= 0;
+						if even_or_odd(rx_byte & rx_input) = PARITET_OP then
+							current_state <= STOP_BIT;
+						else
+							 current_state <= IDLE;
+						end if;
+					end if;
+					
+				when STOP_BIT =>
+					if period_counter < SAMPLING/2 then
 						period_counter <= period_counter + 1;
 						current_state <= STOP_BIT;
 					else
-						recived_flag <= '1';
 						period_counter <= 0;
-						current_state <= PAUSE;
+						
+						if rx_input = '1' then
+							recived_flag <= '1';
+							recived_byte <= rx_byte;
+							period_counter <= 0;
+							current_state <= PAUSE;
+						else
+							current_state <= IDLE;
+						end if;
+						
 					end if;
 					
 				when PAUSE =>
