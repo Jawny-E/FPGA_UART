@@ -1,6 +1,6 @@
 # ProgrammerbareKrinsar
 
-Buckle your fuckles and get ready for the README of a lifetime. This was made with intense hatred, copious amounts of caffeine and lots of love. Please enjoy. If you don't, please contact us at 1-800-KILL-ME or by carrier pidgeon.
+Buckle your fuckles and get ready for the README of a lifetime. This was made with intense hatred, copious amounts of caffeine, and lots of love. Please enjoy. If you don't, please contact us at 1-800-KILL-ME or by carrier pigeon. Don't expect an answer; more likely, we'll send you a digital voodoo doll crafted in VHDL. Now, brace yourself as we journey through circuits of despair, signals of doom, and logic gates resembling Dante's Inferno. Sit tight, put on your best pair of debugging genie pants, and for the love of god, jesus and all his little shepherd boys, keep your hands inside the vehicle at all times. Welcome to the code that gave Stephen Hawking the digital heebiejeebies.
 
 ## Krav til CTRL-modul 1
 - Tar inn 8-databits og konverterer til ett Hexadesimalt tall
