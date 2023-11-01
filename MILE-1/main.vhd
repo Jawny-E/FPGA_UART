@@ -12,7 +12,7 @@ entity rx_module is
 	port(
 		clk 			 : in std_logic;							  		 		 -- Intern klokke	
 		rx_input  	 : in std_logic;							  		  		 -- Seriellt signal
-		recived_flag : out std_logic;							  		  		 -- Flagg for mottatt byte
+		led_indicator : out std_logic;							  		  		 -- Flagg for mottatt byte
 		recived_byte : buffer std_logic_vector(DATABITS-1 downto 0); -- Mottatt byte
 		hex1, hex0 : out std_logic_vector(7 downto 0); 					 -- Output: Signal til 7-segment displaya
 		PARITET 		 : in std_logic;			--'0' for paritetssjekk av
@@ -36,7 +36,7 @@ architecture rtl of rx_module is
 
 --State machine kontroller
 	type RX_SM is (IDLE, START_BIT, DATA_BIT, PARITY_BIT, STOP_BIT, PAUSE);	--Ulike states for dataavlesning
-	signal current_state : RX_SM := IDLE;								--Variabel som held noværande state
+	signal current_state : RX_SM;								--Variabel som held noværande state
 	signal move_to_next  : std_logic := '0';							--Brukt til å dobbeltsjekke startbit
 --Klokkegenerering
 	constant clk_in_bit   : integer := (F_CLK/(BAUDRATE*SAMPLING*2)); --Talet på klokkepulsar frå 50Hz til rx_clk(8*baudrate)
@@ -45,6 +45,7 @@ architecture rtl of rx_module is
 	signal DATA_INDEX : integer range 0 to DATABITS-1 := 0;								--Kontrollerar kva databit som blir lest
 	signal rx_byte		: std_logic_vector(DATABITS-1 downto 0) := (others => '0'); --Mellombels lagring for innkommande data
 	signal rx_tests 	: std_logic_vector(4 downto 0) := (others => '0');				--Mellombels lagring av signalsampler
+	signal recieved_flag : std_logic := '0';
 
 ---------------------------------------------------
 -- Funksjonar
@@ -244,7 +245,7 @@ architecture rtl of rx_module is
 						period_counter := 0;
 						
 						if rx_input = '1' then
-							recived_flag <= '1';
+							recieved_flag <= '1';
 							recived_byte <= rx_byte;
 							period_counter := 0;
 							current_state <= PAUSE;
@@ -259,13 +260,39 @@ architecture rtl of rx_module is
 						period_counter := period_counter + 1;
 					else
 						period_counter := 0;
+						recieved_flag <= '0';
 						current_state <= IDLE;
-						recived_flag <= '0';
 					end if;
 			end case;
 		end if;
 	end process;
 
+	-----
+	-- Processen handterar LED-lyset som skal være
+	-- på i ein kort periode etter mottatt RX-melding
+	-----
+	led_controll : process(clk, recieved_flag)
+		constant led_rate : integer := F_CLK*5/100;
+		variable led_counter : integer range 0 to led_rate;
+		variable led_on : std_logic := '0';
+		begin
+		if rising_edge(clk) then
+			if recieved_flag = '1' then
+			led_on := '1';
+			end if;
+			if led_on = '1' then
+				if led_counter < led_rate then
+					led_counter := led_counter + 1;
+					led_indicator <= '1';
+				else
+					led_counter := 0;
+					led_indicator <= '0';
+					led_on := '0';
+				end if;
+			end if;
+		end if;
+	end process;
+	
 	-----
 	-- Process all kan brukast til meir, men no brukast
 	-- den kun til å sette 7-segmentdisplay
