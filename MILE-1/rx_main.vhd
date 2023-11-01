@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity rx_module is
+entity rx_main is
 	generic(
 		F_CLK 		 	 : integer := 50_000_000; 		--50mHz (Hz)
 		BAUDRATE 	 	 : integer := 9600; 	 			--Gitt baudrate(bit/s)
@@ -12,36 +12,30 @@ entity rx_module is
 	port(
 		clk 			 : in std_logic;							  		 		 -- Intern klokke	
 		rx_input  	 : in std_logic;							  		  		 -- Seriellt signal
-		led_indicator : out std_logic;							  		  		 -- Flagg for mottatt byte
+		PARITET 		 : in std_logic;											 --'0' for paritetssjekk av
+		PARITET_OP	 : in std_logic;											 --'0' for partal, '1' for oddetal 
 		recived_byte : buffer std_logic_vector(DATABITS-1 downto 0); -- Mottatt byte
-		hex1, hex0 : out std_logic_vector(7 downto 0); 					 -- Output: Signal til 7-segment displaya
-		PARITET 		 : in std_logic;			--'0' for paritetssjekk av
-		PARITET_OP	 : in std_logic			--'0' for partal, '1' for oddetal 
-	
-	--Desse portene blei brukt til testing i testbench
-		--Stadar der 
-		--test_clk : out std_logic;	
-		--test_sampling : out std_logic;
-		--test_rx_tests : out std_logic_vector(4 downto 0)
+		led_indicator: out std_logic;							  		  		 -- Flagg for mottatt byte
+		hex1, hex0   : out std_logic_vector(7 downto 0) 			    -- Output: Signal til 7-segment displaya
 	);
 end entity;
 
 
 
-architecture rtl of rx_module is 
+architecture rtl of rx_main is 
 
 ---------------------------------------------------
 -- Deklarering av signal og konstantar
 ---------------------------------------------------
 
---State machine kontroller
+	--State machine kontroller
 	type RX_SM is (IDLE, START_BIT, DATA_BIT, PARITY_BIT, STOP_BIT, PAUSE);	--Ulike states for dataavlesning
-	signal current_state : RX_SM;								--Variabel som held noværande state
-	signal move_to_next  : std_logic := '0';							--Brukt til å dobbeltsjekke startbit
---Klokkegenerering
-	constant clk_in_bit   : integer := (F_CLK/(BAUDRATE*SAMPLING*2)); --Talet på klokkepulsar frå 50Hz til rx_clk(8*baudrate)
-	signal rx_clk         : std_logic := '0';									--Signalet rx_clk
---Dataavlesning
+	signal current_state : RX_SM;															--Variabel som held noværande state
+	signal move_to_next  : std_logic := '0';											--Brukt til å dobbeltsjekke startbit
+	--Klokkegenerering
+	constant clk_in_bit   : integer := (F_CLK/(BAUDRATE*SAMPLING*2)); 		--Talet på klokkepulsar frå 50Hz til rx_clk(8*baudrate)
+	signal rx_clk         : std_logic := '0';											--Signalet rx_clk
+	--Dataavlesning
 	signal DATA_INDEX : integer range 0 to DATABITS-1 := 0;								--Kontrollerar kva databit som blir lest
 	signal rx_byte		: std_logic_vector(DATABITS-1 downto 0) := (others => '0'); --Mellombels lagring for innkommande data
 	signal rx_tests 	: std_logic_vector(4 downto 0) := (others => '0');				--Mellombels lagring av signalsampler
@@ -162,10 +156,11 @@ architecture rtl of rx_module is
 	-- timing for systemet
 	-----
 	data_read : process(rx_clk)
-	variable period_counter : integer range 0 to SAMPLING-1;								--Kontrollerar kvar vi samplar signalet
+	variable period_counter : integer range 0 to SAMPLING-1;			--Kontrollerar kvar vi samplar signalet
 		begin
 		if rising_edge(rx_clk)then
 			case current_state is
+				--State: IDLE, program waiting for startbit
 				when IDLE =>
 					DATA_INDEX <= 0;
 					period_counter := 0;
@@ -175,7 +170,7 @@ architecture rtl of rx_module is
 					else
 						current_state <= IDLE;
 					end if;
-					
+				--State: START_BIT, program double checks startbit
 				when START_BIT =>
 					if period_counter = SAMPLING-1 then
 						if move_to_next = '1' then
@@ -196,7 +191,7 @@ architecture rtl of rx_module is
 					else
 						period_counter := period_counter + 1;
 					end if;
-					
+				--State: DATA_BIT, program is reading input at set intervals
 				when DATA_BIT =>
 					--test_rx_tests <= rx_tests;
 					if period_counter < SAMPLING-1 then
@@ -224,7 +219,7 @@ architecture rtl of rx_module is
 							end if;
 						end if;
 					end if;
-					
+				--State: PARITY_BIT, program checks additional bit and analyses message validity
 				when PARITY_BIT =>
 					if period_counter < SAMPLING-1 then
 						period_counter := period_counter + 1;
@@ -236,7 +231,7 @@ architecture rtl of rx_module is
 							 current_state <= IDLE;
 						end if;
 					end if;
-					
+				--State: STOP_BIT, program checks if stop-condition is recieved
 				when STOP_BIT =>
 					if period_counter < SAMPLING/2 then
 						period_counter := period_counter + 1;
@@ -254,7 +249,7 @@ architecture rtl of rx_module is
 						end if;
 						
 					end if;
-					
+				--State: PAUSE, program forces a 1-bit pause
 				when PAUSE =>
 					if period_counter < SAMPLING-1 then
 						period_counter := period_counter + 1;
