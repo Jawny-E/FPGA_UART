@@ -25,8 +25,10 @@ Full list of Ports and Signals in the system
 |recived_flag|Signal|std_logic|Pulse indicates recieved message|
 |recived_byte|Signal|std_logic|Recieved data|
 
-## Top level
+## Top Module
+The top module is the connector of the other modules and its structure is 
 
+## Clk Divider Module
 
 ## Ctrl Module
 
