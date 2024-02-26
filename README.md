@@ -9,21 +9,21 @@ Full list of Ports and Signals in the system
 
 |Name|I/O|Type|Function|
 |----|---|----|--------|
-|clk|
-|rst_n|
-|button_n|
-|PARITET|
-|PARITET_OP|
-|rx_input|
-|led_indicator|
-|hex0|
-|hex1|
-|tx_output|
-|tx_busy|
-|tx_init|
-|tx_data_to_send|
-|recived_flag|
-|recived_byte|
+|clk|Input|std_logic|50MHz clock|
+|rst_n|Input|std_logic|Reset system|
+|button_n|Input|std_logic|Send a predetermined character|
+|PARITET|Input|std_logic|Turn parity on/off|
+|PARITET_OP|Input|std_logic|Determine even or odd parity|
+|rx_input|Input|std_logic|Recieve serial data|
+|led_indicator|Output|std_logic|Blinks when a message has been recieved|
+|hex0|Output|std_logic_vector(7...0)|Shows HEX of last recieved character|
+|hex1|Output|std_logic_vector(7...0)|Shows HEX of last recieved character|
+|tx_output|Output|std_logic|Sends serial message|
+|tx_busy|Signal|std_logic|Is high whilst message is sending|
+|tx_init|Signal|std_logic|Pulse indicates that a message should be sent|
+|tx_data_to_send|Signal|std_logic(7...0)|Data to transfer in binary|
+|recived_flag|Signal|std_logic|Pulse indicates recieved message|
+|recived_byte|Signal|std_logic|Recieved data|
 
 ## Top level
 
