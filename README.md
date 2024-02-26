@@ -1,30 +1,15 @@
-# ProgrammerbareKrinsar
+# Serial communication on the DE10-Lite FPGA board
+This project implements a Universal Asynchronous Receiver - Transmitter system on the Terasic DE10-Lite FPGA board with an adapter for RS-232. The system has two main tasks: to copy and return any incoming character and to send a predeterminded character on a button press(KEY0). The user can manually toggle parity checks with the SWO switch and then chose wheter the parity check is even or odd with SW1. Whilst recieving data a led will blink on the board. Any recieved character will in addition be shown in hex format on the inbuilt 7-segment dislplay on the board. 
 
-Buckle your fuckles and get ready for the README of a lifetime. This was made with intense hatred, copious amounts of caffeine, and lots of love. Please enjoy. If you don't, please contact us at 1-800-KILL-ME or by carrier pigeon. Don't expect an answer; more likely, we'll send you a digital voodoo doll crafted in VHDL. Now, brace yourself as we journey through circuits of despair, signals of doom, and logic gates resembling Dante's Inferno. Sit tight, put on your best pair of debugging genie pants, and for the love of god, jesus and all his little shepherd boys, keep your hands inside the vehicle at all times. Welcome to the code that gave Stephen Hawking the digital heebiejeebies.
+# Modules
+To give the system more structure it has been compartmentalised into six modules. There is two Clock Divider-modules, a CTRL-module which controls the flow of data, an RX-module that recieves data, a TX-module for sending data and a Top-module to tie it all together to one system. Ideally if you want to implement this system for yourself you should only need to edit the baudrate and databits in the Top Module. Here is an overview of the modules and their connections. If I were to remake this system I would probably try to reduce the amount of interconnections for a cleaner system, but I do not have the time
+![Screenshot 2024-02-26 115031](https://github.com/Jawny-E/FPGA_UART/assets/94108006/26b0affa-a25a-41db-9770-1843536b429f)
 
-## Krav til CTRL-modul 1
-- Tar inn 8-databits og konverterer til ett Hexadesimalt tall
-- Tallet skal tilsvare ASCII karakter
-- Viser dette tallet tre 7-segmentdisplays
-- Skal blinke en LED på RS-232 ved mottatt melding
-![ASCII-Table-wide svg](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/f68f5f9c-886a-44af-b687-88f2303978a9)
 
-Resultat: 
-![Skjermbilde 2023-10-23 174015](https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/71760a93-11c5-45e7-8342-b9c92ca81c6e)
+## Top level
 
-## Krav til RX-modul 1
-- UART protokoll 8 data-bit, 1 stop-bit og 0 paritets-bit
-- Skal kunne bruke 9600 baudrate (justerbar)
-- Skal kun vidareføre korrekt mottatt byte
-- Oversampling med 8 gonger raskare hastigheit, bruk bit 3 eller 4
-  - Her bør det være enkelt nok å gjennomføre majoritetsvalg i staden vha. ein funksjon
-- Sender ut eit signal ved mottatt data
-- Vil gjerne: PARITETSBIT
- 
-Resultat:
+## Ctrl Module
 
-<img width="693" alt="Results" src="https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/0ffd3171-0160-40c2-b6b4-ec48f064d0b5">
+## TX Module
 
-Pinout:
-
-<img width="631" alt="Pins" src="https://github.com/Jawny-E/ProgrammerbareKrinsar/assets/94108006/9ddb34d5-ad3c-42e1-a3a9-48a55c5920f0">
+## RX Module 
